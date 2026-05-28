@@ -1,0 +1,4 @@
+interface:
+  display_name: "Easy Execute"
+  short_description: "Plan, delegate, build, review, and verify"
+  default_prompt: "Use $easy-execute to take this goal/spec/plan through planning, implementation, review, repair, verification, and closeout."
