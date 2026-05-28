@@ -13,7 +13,7 @@ At activation, state the current phase in one short sentence. For long-running w
 
 Activation and checkpoint messages are not deliverables. Do not end the turn after saying Easy Execute is active, summarizing current state, or naming the next slice unless the user asked only for status, planning, or a handoff.
 
-If the phase is ready for implementation and there are no blocking questions, immediately begin the next concrete implementation action in the same turn. That action can be inspecting the target files, creating/updating the task plan, spawning bounded workers, or making the first scoped edit. Do not stop at "the next slice should be..."
+If the phase is ready for implementation and there are no blocking questions, immediately begin the next concrete implementation action in the same turn. For non-trivial code changes, that action should be inspecting enough context to brief workers, creating/updating the task plan, and spawning bounded workers. Do not stop at "the next slice should be..."
 
 When work spans turns, interruptions, or possible context compaction, leave a compact checkpoint in chat:
 
@@ -29,7 +29,8 @@ Use existing domain skills when they apply. This skill coordinates the work; it 
 - Ask questions only when the answer is blocking and cannot be discovered safely.
 - Keep the main thread responsible for quality, integration, tradeoffs, and final acceptance.
 - Check dirty state before edits. Do not revert unrelated changes. Treat unexpected diffs as user-owned unless proven otherwise.
-- Delegate actively when subagent tools are available and the task can be bounded, but keep critical-path or tightly coupled work local.
+- For code implementation, delegate-first when subagent tools are available. The main thread owns critical-path decisions, planning, worker briefs, integration, review, verification, and final acceptance; it should not be the primary code author for non-trivial implementation.
+- Direct main-thread edits are exceptions: trivial one-file changes, mechanical integration after worker output, merge/test fallout, emergency fixes, or fallback when subagents are unavailable/exhausted. State the exception before editing.
 - If subagent tools are unavailable, state the fallback and run distinct named planning, implementation, and review passes in the main thread.
 - Default delegated subagents to low reasoning. Raise to medium/high/xhigh only for architecture, security, data loss, billing, auth, migration, production, or ambiguous cross-system decisions.
 - Prefer the inherited model for subagents. Override model only when the task clearly benefits from a cheaper/faster or stronger/specialized model.
@@ -70,7 +71,7 @@ For non-trivial work, keep a visible task plan with the current step in progress
 
 Before promising delegation or review rounds, check whether subagent tools are available. If they are not, use the main-thread fallback and say so.
 
-If orientation shows the plan is accepted, reviews are clean, and no blockers remain, advance directly to Delegate Implementation or Implement. Do not return a status-only response.
+If orientation shows the plan is accepted, reviews are clean, and no blockers remain, advance directly to Delegate Implementation for non-trivial code work. Do not return a status-only response.
 
 ### 2. Inspect and Plan
 
@@ -96,6 +97,8 @@ Before spawning subagents, define the local critical path and the delegable side
 
 Use workers for disjoint implementation slices, research threads, fixture/test additions, docs parity, or focused verification. Assign each worker explicit ownership of files, modules, or responsibilities. Tell workers they are not alone in the codebase and must not revert unrelated edits.
 
+For non-trivial code changes, spawn at least one implementation worker before the main thread writes code. The main thread may inspect files to create good briefs, but should not continue into solo implementation unless one of the direct-edit exceptions applies.
+
 Every subagent brief should include:
 
 - objective
@@ -116,6 +119,8 @@ When a worker finishes, review its changed files or output before integrating. I
 ### 4. Implement
 
 Build only the accepted scope, using the repo's existing patterns and the foundation decisions from the plan. Keep APIs small, names clear, and behavior explicit.
+
+Treat this phase as worker-led for non-trivial code. The main thread coordinates implementation, reviews worker output, applies or refines integration, and runs verification. If the main thread implements directly, disclose which exception allows it.
 
 If the implementation reveals that the plan is wrong, pause the slice long enough to update the plan and explain the adjustment. Do not silently widen scope.
 
