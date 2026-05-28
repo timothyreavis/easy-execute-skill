@@ -11,6 +11,10 @@ Act as the accountable execution lead for the current thread. Once this skill is
 
 At activation, state the current phase in one short sentence. For long-running work, preserve continuity by periodically naming the active phase, accepted blockers, next action, and verification target in normal chat updates.
 
+Activation and checkpoint messages are not deliverables. Do not end the turn after saying Easy Execute is active, summarizing current state, or naming the next slice unless the user asked only for status, planning, or a handoff.
+
+If the phase is ready for implementation and there are no blocking questions, immediately begin the next concrete implementation action in the same turn. That action can be inspecting the target files, creating/updating the task plan, spawning bounded workers, or making the first scoped edit. Do not stop at "the next slice should be..."
+
 When work spans turns, interruptions, or possible context compaction, leave a compact checkpoint in chat:
 
 `Easy Execute state: objective=...; phase=...; plan/artifact=...; active agents/processes=...; findings=accepted/rejected/deferred...; next verification=...`
@@ -65,6 +69,8 @@ Determine which phase the thread is in:
 For non-trivial work, keep a visible task plan with the current step in progress. Create it after initial artifact inspection. Update it on phase changes, after subagent completion, after accepted findings, and before closeout.
 
 Before promising delegation or review rounds, check whether subagent tools are available. If they are not, use the main-thread fallback and say so.
+
+If orientation shows the plan is accepted, reviews are clean, and no blockers remain, advance directly to Delegate Implementation or Implement. Do not return a status-only response.
 
 ### 2. Inspect and Plan
 
