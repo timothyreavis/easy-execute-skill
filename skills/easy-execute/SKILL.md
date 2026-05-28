@@ -40,6 +40,20 @@ Use existing domain skills when they apply. This skill coordinates the work; it 
 - Do not leave subagents, dev servers, watchers, or other processes running after they stop being useful.
 - Never accept reviewer findings blindly. Fix valid findings; reject invalid findings with a concrete rationale.
 
+## Subagent Tool Hygiene
+
+Before spawning new subagents, audit the active agent pool:
+
+- Track each active agent by id/name, assigned lane, expected output, and status in the thread checkpoint.
+- Close completed, idle, obsolete, duplicate, or unusable agents before opening new ones.
+- If the spawn limit is hit, first close unneeded agents and retry; do not immediately fall back to main-thread work.
+- Reuse or resume an existing agent only when the new task depends on its context; otherwise spawn a fresh bounded agent.
+- Do not pile multiple unrelated tasks onto one unresolved agent thread.
+- If an agent stalls, returns unusable output, or drifts from scope, close or redirect it with a tighter prompt instead of waiting indefinitely.
+- If workers conflict, pause new delegation, evaluate the boundary, then re-delegate a focused integration or repair task.
+- Keep waits sparse and purposeful. While agents run, the main thread should do non-overlapping coordination work, not duplicate their task.
+- Record the exact reason for any downgrade to main-thread fallback: no subagent tool, spawn failure after cleanup, max-agent limit after cleanup, repeated unusable outputs, or capability mismatch.
+
 Reasoning selection:
 
 - Low: mechanical search, docs parity, simple tests, focused fixtures, narrow verification.
@@ -97,6 +111,8 @@ Use planner/research subagents to gather context, inspect source artifacts, chal
 ### 3. Delegate Work
 
 Before spawning subagents, define the coordination path and the worker lanes.
+
+Run the Subagent Tool Hygiene checklist before each delegation wave, especially after long-running work, review rounds, or failed spawn attempts.
 
 Use workers for disjoint implementation slices, research threads, fixture/test additions, docs/artifact drafting, docs parity, focused verification, and fix implementation. Assign each worker explicit ownership of files, modules, or responsibilities. Tell workers they are not alone in the codebase and must not revert unrelated edits.
 
