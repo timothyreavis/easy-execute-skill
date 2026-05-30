@@ -69,7 +69,27 @@ Think through likely future variants, adjacent workflows, ownership boundaries, 
 
 Do not implement speculative features. Do not add heavy abstractions, generic frameworks, or unused layers only because future work is possible. The target is a durable foundation for plausible expansion, with the current scope implemented simply and explicitly.
 
+Use this foundation decision path:
+
+- Existing foundation fits: build on it and preserve its contracts.
+- Existing foundation is close but incomplete: extend it narrowly at the right seam.
+- No foundation exists and future variants are plausible: create the smallest durable foundation needed for the current feature and likely next variants.
+- The change is isolated, tiny, or unlikely to repeat: do not create new foundation; make the direct change.
+
 For tiny or low-risk changes, delegate a light foundation check or keep it to one or two coordinator-reviewed sentences. For substantial work, have subagents draft three to six foundation decisions before editing. Each decision should say what is being made stable now and what future expansion it keeps possible. Add new abstractions only when current duplication, contract instability, or known near-term variants justify them.
+
+## Worker Quality Bar
+
+Include these constraints in implementation, research, planning, review, and fix briefs when they apply:
+
+- Surface assumptions, ambiguity, and tradeoffs instead of silently choosing an interpretation.
+- Prefer simple, explicit code. Do not add speculative flexibility, configuration, or abstraction.
+- Match existing style and ownership boundaries. Do not refactor adjacent code, comments, or formatting unless the assigned task requires it.
+- Treat existing foundations as the default path. Reuse or extend them before proposing a new structure.
+- Remove only dead code, imports, or artifacts created by the assigned change. Mention unrelated cleanup instead of doing it.
+- Make every changed line trace to the assigned slice, accepted finding, or verification requirement.
+- Define success criteria and verification for the assigned slice before returning.
+- If the worker's first approach grows too large for the task, simplify before handing it back.
 
 ## Workflow
 
@@ -127,6 +147,7 @@ Every subagent brief should include:
 - whether edits are allowed
 - commands allowed or expected
 - constraints and source-of-truth artifacts
+- applicable Worker Quality Bar items
 - expected output
 - evidence required
 - instruction not to edit or integrate unless explicitly assigned
