@@ -100,6 +100,16 @@ Default to simple now, scale-safe later. Keep MVP behavior narrow, but choose da
 
 Prefer reusable building blocks where adjacent or future features logically need the same behavior. Before adding a new UI pattern, data contract, API helper, permission check, workflow primitive, or integration adapter, look for an existing one to reuse or extend. Standardize repeated patterns at the lowest sensible layer, but avoid broad generic abstractions for one-off behavior.
 
+Use a minimum-complexity check before adding code or dependencies:
+
+1. Can this requirement be removed, deferred, or handled by existing behavior?
+2. Does the standard library, platform, database, browser, framework, or already-installed dependency cover it?
+3. Can an existing local component, helper, schema, event, permission primitive, or workflow primitive be reused or narrowly extended?
+4. Can the current scope be solved with a smaller explicit implementation?
+5. Only then add new code, files, abstractions, dependencies, or configuration.
+
+If a deliberately simple implementation has a known ceiling, document the ceiling and the trigger to upgrade it. Prefer a short code comment only when that ceiling would not be obvious from the code itself; otherwise name it in the plan, review, or closeout. Do not let "later" become untracked debt.
+
 Use this foundation decision path:
 
 - Existing foundation fits: build on it and preserve its contracts.
@@ -210,6 +220,8 @@ Choose reviewer count by risk:
 - Security, auth, billing, destructive migration, production incident, or major architecture: four to six reviewers with role diversity.
 
 Useful reviewer roles include correctness, architecture/foundation, security/privacy, production/ops, product/UX, docs/contracts, strategy/commercial, and copy/content.
+
+Include an over-engineering review lens for non-trivial code changes. This complements correctness/security review; it does not replace them. Ask what can be deleted, replaced with standard library or native platform behavior, handled by an existing dependency, collapsed from an abstraction with one implementation, or expressed with fewer files and simpler data flow. Reject simplification findings that would remove trust-boundary validation, data-loss protection, security, accessibility, required tests, explicit user requirements, or meaningful observability.
 
 ### 6. Triage and Repair
 
