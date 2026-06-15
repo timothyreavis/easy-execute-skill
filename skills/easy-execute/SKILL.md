@@ -1,6 +1,6 @@
 ---
 name: easy-execute
-description: "Use when Timothy invokes easy execute or clearly asks Codex to take a goal, plan, spec, docs, roadmap item, launch-readiness item, repo-maintenance task, or review/repair effort through a multi-phase execution workflow where the main agent acts as coordinator/chief of staff: clarify only what is blocking, brief and delegate plan drafting, foundation research, research, coding, testing, docs/artifacts, review, fixes, and verification to subagents, evaluate validity of returned work, re-delegate as needed, and close with evidence."
+description: "Use when a user invokes easy execute or clearly asks Codex to take a goal, plan, spec, docs, roadmap item, launch-readiness item, repo-maintenance task, or review/repair effort through a multi-phase execution workflow where the main agent acts as coordinator: clarify only what is blocking, brief and delegate plan drafting, foundation research, research, coding, testing, docs/artifacts, review, fixes, and verification to subagents, evaluate validity of returned work, re-delegate as needed, and close with evidence."
 ---
 
 # Easy Execute
@@ -14,6 +14,8 @@ At activation, state the current phase in one short sentence. For long-running w
 Activation and checkpoint messages are not deliverables. Do not end the turn after saying Easy Execute is active, summarizing current state, or naming the next slice unless the user asked only for status, planning, or a handoff.
 
 If the phase is ready for implementation and there are no blocking questions, immediately begin the next concrete implementation action in the same turn. That action should be inspecting just enough context to brief subagents, creating/updating the task plan, and spawning bounded workers. Do not stop at "the next slice should be..."
+
+When assigned a scoped Linear issue or worker brief, take the slice as far as reasonably possible without waiting for another coordinator prompt. If the plan becomes clear and the brief allows edits, continue through implementation, focused review, fixes, verification, commit/push when permitted, and Linear closeout. Stop only for a real blocker: unsafe data loss, missing access, explicit no-edit/scout-only scope, unrelated dirty state that affects the slice, resource gates, failing verification that cannot be resolved in scope, or a required product decision.
 
 When work spans turns, interruptions, or possible context compaction, leave a compact checkpoint in chat:
 
@@ -38,7 +40,21 @@ Use existing domain skills when they apply. This skill coordinates the work; it 
 - Default delegated subagents to low reasoning. Raise to medium/high/xhigh only for architecture, security, data loss, billing, auth, migration, production, or ambiguous cross-system decisions.
 - Prefer the inherited model for subagents. Override model only when the task clearly benefits from a cheaper/faster or stronger/specialized model.
 - Do not leave subagents, dev servers, watchers, or other processes running after they stop being useful.
+- Treat local resources as constrained. Before spawning several workers, starting browser automation, creating worktrees, installing dependencies, or running broad verification, check disk/memory/process pressure and lower concurrency or pause for cleanup when the system is tight.
 - Never accept reviewer findings blindly. Fix valid findings; reject invalid findings with a concrete rationale.
+
+## Commit And Push Handling
+
+- Follow the brief's commit policy exactly. If the brief forbids commit/push, stop at a reviewed local-ready state unless the coordinator explicitly changes the policy.
+- If the objective requires committed or pushed work, do not stop at local-ready. After accepted blocker/high/medium findings are resolved and verification passes, commit only the scoped files.
+- If commit/push is allowed by the brief, treat it as part of closeout after clean review and verification; do not wait for a separate "commit it" prompt.
+- Before committing, prove branch, HEAD, dirty state, staged file names, and staged name-status. Abort if unrelated files are staged or required files are unexpectedly dirty.
+- Use a concise commit message tied to the issue. Push only the named branch or target in the brief, then record commit hash, push range, verification, and final status in Linear.
+- Keep deploy separate from commit/push. Use the repo's current deploy owner and record whether deployment and live verification are done, pending, or blocked.
+- When a pushed branch is the expected delivery, include a merge-readiness judgment in closeout: target branch, source head, whether the branch is clean and pushed, conflict-check status if run, verification evidence, migration/deploy blockers, and whether the coordinator should merge automatically.
+- Do not leave work at "pushed" without naming the next integration action. If the branch appears merge-ready, say so plainly. If not, name the exact blocker.
+- Do not mark Linear `Done` merely because a local commit exists. If the branch is not pushed/deployed/live verified and the issue is not explicitly local-only, leave or move the issue to `In Review` and state the exact next integration step.
+- If a worker updates Linear itself, its state must match delivery reality: `local-ready`, `committed`, `pushed`, `deployed`, and `live verified` are different closeout states.
 
 ## Subagent Tool Hygiene
 
@@ -48,11 +64,22 @@ Before spawning new subagents, audit the active agent pool:
 - Close completed, idle, obsolete, duplicate, or unusable agents before opening new ones.
 - If the spawn limit is hit, first close unneeded agents and retry; do not immediately fall back to main-thread work.
 - Reuse or resume an existing agent only when the new task depends on its context; otherwise spawn a fresh bounded agent.
+- Before reusing a prior Codex thread/worktree for a new issue, prove the prior task is complete or idle, the worktree is clean or intentionally continuing, and the new branch base is correct. Rename the thread when its active issue changes.
 - Do not pile multiple unrelated tasks onto one unresolved agent thread.
 - If an agent stalls, returns unusable output, or drifts from scope, close or redirect it with a tighter prompt instead of waiting indefinitely.
 - If workers conflict, pause new delegation, evaluate the boundary, then re-delegate a focused integration or repair task.
 - Keep waits sparse and purposeful. While agents run, the main thread should do non-overlapping coordination work, not duplicate their task.
 - Record the exact reason for any downgrade to main-thread fallback: no subagent tool, spawn failure after cleanup, max-agent limit after cleanup, repeated unusable outputs, or capability mismatch.
+
+Resource hygiene:
+
+- On constrained local machines, treat under 8 GiB free disk as a warning and under 4 GiB free disk as an implementation pause gate unless the task is an explicit cleanup or emergency fix.
+- Under 8 GiB free disk, do not spawn worker sidecars/subagents, browser sessions, dev servers, dependency installs, broad tests/builds, or new worktrees unless the coordinator explicitly authorizes that exception.
+- Under 4 GiB free disk, do not spawn workers, sidecars, browser sessions, or verification lanes at all except for explicit cleanup or emergency incident work.
+- Prefer one to three concurrent workers on resource-heavy repo work. Six is still only a maximum for genuinely parallel, lightweight lanes.
+- Before cleanup, prove process/path ownership. Stop only processes started by the current effort or clearly obsolete worker/browser/dev-server processes; otherwise create a cleanup issue or ask.
+- Do not delete worktrees, sessions, logs, caches, `node_modules`, generated files, or untracked artifacts unless the current task explicitly authorizes cleanup and provenance is clear.
+- If a project-local or user-installed resource helper is available, use it for a read-only snapshot before large delegation waves. Do not hard-code private machine paths into worker briefs or reusable skill files.
 
 Reasoning selection:
 
@@ -75,6 +102,8 @@ Use this foundation decision path:
 - Existing foundation is close but incomplete: extend it narrowly at the right seam.
 - No foundation exists and future variants are plausible: create the smallest durable foundation needed for the current feature and likely next variants.
 - The change is isolated, tiny, or unlikely to repeat: do not create new foundation; make the direct change.
+- Cross-repo contract change: name the producer and consumer before editing. If a producer starts emitting/storing new fields, verify the consumer accepts them or create/comment the consumer follow-up before closing the producer issue.
+- Customer-visible shell/navigation change with unclear layout: do a design/scout pass before production implementation. The scout should settle placement, mobile behavior, priority relative to existing chrome, empty/action states, and implementation boundaries.
 
 For tiny or low-risk changes, delegate a light foundation check or keep it to one or two coordinator-reviewed sentences. For substantial work, have subagents draft three to six foundation decisions before editing. Each decision should say what is being made stable now and what future expansion it keeps possible. Add new abstractions only when current duplication, contract instability, or known near-term variants justify them.
 
@@ -147,6 +176,7 @@ Every subagent brief should include:
 - whether edits are allowed
 - commands allowed or expected
 - constraints and source-of-truth artifacts
+- resource constraints, cleanup permissions, and expected process ownership
 - applicable Worker Quality Bar items
 - expected output
 - evidence required
@@ -201,3 +231,10 @@ Delegate the smallest verification set that proves the work. The main thread eva
 - direct artifact rereads for docs and plans
 
 Before final response, check active subagents, dev servers/watchers, temp artifacts, verification commands, and unresolved risks. Close unneeded subagents and stop unneeded local processes. Report what changed, what verified it, accepted findings fixed, rejected findings with rationale, deferred findings with next step, remaining blocker/high/medium count, unresolved risks, and the next concrete step if one remains.
+
+For Linear closeout, include:
+
+- delivery state: local-ready | committed | pushed | deployed | live verified
+- branch and commit hash when applicable
+- whether Linear should be `In Review`, `Done`, or blocked, with the reason
+- downstream contract consumers or deploy owners still needing action
