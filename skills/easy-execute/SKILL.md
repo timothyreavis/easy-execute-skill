@@ -55,6 +55,7 @@ Use existing domain skills when they apply. This skill coordinates the work; it 
 - Do not leave work at "pushed" without naming the next integration action. If the branch appears merge-ready, say so plainly. If not, name the exact blocker.
 - Do not mark Linear `Done` merely because a local commit exists. If the branch is not pushed/deployed/live verified and the issue is not explicitly local-only, leave or move the issue to `In Review` and state the exact next integration step.
 - If a worker updates Linear itself, its state must match delivery reality: `local-ready`, `committed`, `pushed`, `deployed`, and `live verified` are different closeout states.
+- When work is merged and pushed, do not assume the worker branch or worktree disappeared. Treat follow-on branch/worktree cleanup as part of integration closeout. Remove only worktrees proven safe by the resource-hygiene rules below, or report the exact cleanup blocker.
 
 ## Subagent Tool Hygiene
 
@@ -80,6 +81,14 @@ Resource hygiene:
 - Before cleanup, prove process/path ownership. Stop only processes started by the current effort or clearly obsolete worker/browser/dev-server processes; otherwise create a cleanup issue or ask.
 - Do not delete worktrees, sessions, logs, caches, `node_modules`, generated files, or untracked artifacts unless the current task explicitly authorizes cleanup and provenance is clear.
 - If a project-local or user-installed resource helper is available, use it for a read-only snapshot before large delegation waves. Do not hard-code private machine paths into worker briefs or reusable skill files.
+
+Worktree and branch hygiene:
+
+- A worker should not delete the worktree it is actively running from. Instead, report cleanup readiness in closeout: worktree path, branch, HEAD, clean status, push status, known active processes, and whether the branch has been merged if known.
+- A coordinator or cleanup worker may remove a completed worktree only after proving all of the following: the source branch is contained in the pushed target branch, the worktree is clean including untracked files, there are no unpushed commits, no active thread/process is using the path, and no review/deploy/rollback/follow-up still needs the separate worktree.
+- Use `git worktree remove <path>` for eligible source worktrees. Use `git worktree prune` only for stale metadata after removal or missing directories. Do not use raw recursive deletion for source worktrees as routine hygiene.
+- Delete local or remote branches only when the target branch contains the work, project conventions allow deletion, and no open review, release, automation, issue, or worker reference still needs the branch.
+- If cleanup would be valuable but any proof is missing, leave the worktree in place and create or update a cleanup task with the path, branch, and missing proof instead of guessing.
 
 Reasoning selection:
 
