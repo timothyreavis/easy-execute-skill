@@ -100,6 +100,8 @@ Default to simple now, scale-safe later. Keep MVP behavior narrow, but choose da
 
 Prefer reusable building blocks where adjacent or future features logically need the same behavior. Before adding a new UI pattern, data contract, API helper, permission check, workflow primitive, or integration adapter, look for an existing one to reuse or extend. Standardize repeated patterns at the lowest sensible layer, but avoid broad generic abstractions for one-off behavior.
 
+For frontend/UI work, prefer existing design-system primitives and tokenized styling over standalone elements. Use established tokens, CSS variables, theme values, or utility primitives for color, spacing, typography, radius, borders, shadows, states, and motion when the repo provides them. If a new primitive is justified, make it token-ready and reusable for adjacent cases; avoid hard-coded one-off visual variants unless the existing system cannot reasonably express the requirement. If no token system exists, match local conventions and note the follow-up instead of inventing a broad design system inside a small task.
+
 Use a minimum-complexity check before adding code or dependencies:
 
 1. Can this requirement be removed, deferred, or handled by existing behavior?
