@@ -98,6 +98,8 @@ Do not implement speculative features. Do not add heavy abstractions, generic fr
 
 Default to simple now, scale-safe later. Keep MVP behavior narrow, but choose data shapes, permissions, contracts, ownership boundaries, and migration paths that can support the obvious next versions without forcing a known rewrite. If the simple implementation would create likely refactor debt, call that out before building.
 
+Prefer reusable building blocks where adjacent or future features logically need the same behavior. Before adding a new UI pattern, data contract, API helper, permission check, workflow primitive, or integration adapter, look for an existing one to reuse or extend. Standardize repeated patterns at the lowest sensible layer, but avoid broad generic abstractions for one-off behavior.
+
 Use this foundation decision path:
 
 - Existing foundation fits: build on it and preserve its contracts.
