@@ -130,7 +130,9 @@ Use this foundation decision path:
 - Cross-repo contract change: name the producer and consumer before editing. If a producer starts emitting/storing new fields, verify the consumer accepts them or create/comment the consumer follow-up before closing the producer issue.
 - Customer-visible shell/navigation change with unclear layout: do a design/scout pass before production implementation. The scout should settle placement, mobile behavior, priority relative to existing chrome, empty/action states, and implementation boundaries.
 
-For tiny or low-risk changes, delegate a light foundation check or keep it to one or two coordinator-reviewed sentences. For substantial work, have subagents draft three to six foundation decisions before editing. Each decision should say what is being made stable now and what future expansion it keeps possible. Add new abstractions only when current duplication, contract instability, or known near-term variants justify them.
+For tiny or low-risk changes, delegate a light foundation check or keep it to one or two coordinator-reviewed sentences. For substantial work, have subagents first name three to ten realistic adjacent features or future variants that could reuse the same foundation. Then have them draft three to six foundation decisions before editing. Each decision should say what is being made stable now, what immediate feature it supports, and what future expansion it keeps possible. Add new abstractions only when current duplication, contract instability, or known near-term variants justify them.
+
+The adjacent-feature scan is a design calibration tool, not a scope expansion step. Workers must not implement those adjacent features unless the issue explicitly asks for them. If the scan does not reveal realistic reuse, keep the implementation direct.
 
 ## Worker Quality Bar
 
