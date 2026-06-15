@@ -96,6 +96,8 @@ Think through likely future variants, adjacent workflows, ownership boundaries, 
 
 Do not implement speculative features. Do not add heavy abstractions, generic frameworks, or unused layers only because future work is possible. The target is a durable foundation for plausible expansion, with the current scope implemented simply and explicitly.
 
+Default to simple now, scale-safe later. Keep MVP behavior narrow, but choose data shapes, permissions, contracts, ownership boundaries, and migration paths that can support the obvious next versions without forcing a known rewrite. If the simple implementation would create likely refactor debt, call that out before building.
+
 Use this foundation decision path:
 
 - Existing foundation fits: build on it and preserve its contracts.
