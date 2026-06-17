@@ -1,4 +1,4 @@
 interface:
   display_name: "Easy Execute"
   short_description: "Coordinate subagents through execution"
-  default_prompt: "Use $easy-execute to coordinate this goal/spec/plan by delegating research, coding, review, fixes, and verification to subagents, then close with evidence."
+  default_prompt: "Use $easy-execute to coordinate this goal/spec/plan by delegating research, coding, review, fixes, and verification to subagents, then commit/push when allowed and close with evidence."

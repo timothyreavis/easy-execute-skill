@@ -19,7 +19,7 @@ When assigned a scoped Linear issue or worker brief, take the slice as far as re
 
 When work spans turns, interruptions, or possible context compaction, leave a compact checkpoint in chat:
 
-`Easy Execute state: objective=...; phase=...; plan/artifact=...; active agents/processes=...; findings=accepted/rejected/deferred...; next verification=...`
+`Easy Execute state: objective=...; phase=...; delivery_target=...; plan/artifact=...; active agents/processes=...; findings=accepted/rejected/deferred...; next verification=...`
 
 After a resume or compaction, if this checkpoint is still in context and the user has not redirected the thread, treat Easy Execute as still active and restate the current phase before continuing.
 
@@ -37,19 +37,39 @@ Use existing domain skills when they apply. This skill coordinates the work; it 
 - Direct main-thread edits are last-resort exceptions: subagents unavailable/exhausted, a tiny mechanical integration patch after worker output, or an urgent unblocker too small to delegate. State the exception before editing.
 - Treat subagents as exhausted only after tool failures, max-agent limits, repeated unusable outputs, or unavailable capability. State the specific reason before falling back.
 - If subagent tools are unavailable, state the fallback and run distinct named planning, implementation, and review passes in the main thread.
+- When this skill runs inside a delegated worker thread, treat the delegation brief as the source of truth for that slice. You may use bounded internal subagents when useful, but do not spawn extra Codex threads unless explicitly asked; finish the assigned slice or report the exact blocker.
 - Default delegated subagents to low reasoning. Raise to medium/high/xhigh only for architecture, security, data loss, billing, auth, migration, production, or ambiguous cross-system decisions.
 - Prefer the inherited model for subagents. Override model only when the task clearly benefits from a cheaper/faster or stronger/specialized model.
 - Do not leave subagents, dev servers, watchers, or other processes running after they stop being useful.
 - Treat local resources as constrained. Before spawning several workers, starting browser automation, creating worktrees, installing dependencies, or running broad verification, check disk/memory/process pressure and lower concurrency or pause for cleanup when the system is tight.
 - Never accept reviewer findings blindly. Fix valid findings; reject invalid findings with a concrete rationale.
 
+## Delegated Worker Intake
+
+When starting from a Linear issue, worker brief, or delegated Codex thread, normalize the assignment before editing. In the first useful checkpoint, state:
+
+- issue or objective id
+- repo/path/worktree and current branch
+- whether the thread is active, a continuation, duplicate, superseded, or blocked before edits
+- delivery target: scout-only, local-ready, committed, pushed, deployed, or live verified
+- commit, push, merge, deploy, and provider-mutation policy
+- the source of truth that must prove success: tests, build, live page, provider UI/API, logs, Linear, or a specific artifact
+
+If thread-title tools are available, rename worker threads early to a short issue/objective label. Do not leave the thread title as a pasted delegation block when it can be corrected.
+
+If evidence shows another worker, branch, or commit already completed or superseded the same issue, do not keep parallel-editing by default. Stop with a concise handoff, or continue only as an explicitly scoped reviewer, verifier, or integration worker.
+
+For provider, browser, deploy, ads, analytics, or external-account work, never infer account state from repo code, old notes, or another thread's browser session. If the required UI/API session is not available to the acting thread, record that as the blocker and do not invent state.
+
 ## Commit And Push Handling
 
 - Follow the brief's commit policy exactly. If the brief forbids commit/push, stop at a reviewed local-ready state unless the coordinator explicitly changes the policy.
+- At the start of implementation, classify commit policy as forbidden, allowed, or required. If the brief says "commit and push when verified" or the issue expects a pushed branch, treat push as required after clean verification, not optional.
 - If the objective requires committed or pushed work, do not stop at local-ready. After accepted blocker/high/medium findings are resolved and verification passes, commit only the scoped files.
 - If commit/push is allowed by the brief, treat it as part of closeout after clean review and verification; do not wait for a separate "commit it" prompt.
 - Before committing, prove branch, HEAD, dirty state, staged file names, and staged name-status. Abort if unrelated files are staged or required files are unexpectedly dirty.
 - Use a concise commit message tied to the issue. Push only the named branch or target in the brief, then record commit hash, push range, verification, and final status in Linear.
+- If an implementation worker, sidecar, or earlier turn already created commits or advanced a remote, verify actual local and remote refs before adding follow-up commits. Closeout must describe the real delivery state, including any unexpected target-branch movement; do not pretend a change stayed branch-only when remote proof shows otherwise.
 - Keep deploy separate from commit/push. Use the repo's current deploy owner and record whether deployment and live verification are done, pending, or blocked.
 - When a pushed branch is the expected delivery, include a merge-readiness judgment in closeout: target branch, source head, whether the branch is clean and pushed, conflict-check status if run, verification evidence, migration/deploy blockers, and whether the coordinator should merge automatically.
 - Do not leave work at "pushed" without naming the next integration action. If the branch appears merge-ready, say so plainly. If not, name the exact blocker.
@@ -259,11 +279,14 @@ Delegate the smallest verification set that proves the work. The main thread eva
 - live/log checks for production incidents
 - direct artifact rereads for docs and plans
 
+For deploy, tracking, analytics, ads, provider, and customer-visible site work, distinguish each state explicitly: configured, rendered, deployed, provider-received, and live verified. A branch can be correct and still not be launch-ready if deploy or provider receipt is unproven. Name the exact unproven state as the blocker instead of collapsing it into Done.
+
 Before final response, check active subagents, dev servers/watchers, temp artifacts, verification commands, and unresolved risks. Close unneeded subagents and stop unneeded local processes. Report what changed, what verified it, accepted findings fixed, rejected findings with rationale, deferred findings with next step, remaining blocker/high/medium count, unresolved risks, and the next concrete step if one remains.
 
 For Linear closeout, include:
 
 - delivery state: local-ready | committed | pushed | deployed | live verified
 - branch and commit hash when applicable
+- push state and remote ref proof when applicable
 - whether Linear should be `In Review`, `Done`, or blocked, with the reason
 - downstream contract consumers or deploy owners still needing action
