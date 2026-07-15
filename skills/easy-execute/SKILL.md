@@ -15,7 +15,7 @@ Activation and checkpoint messages are not deliverables. Do not end the turn aft
 
 If the phase is ready for implementation and there are no blocking questions, immediately begin the next concrete implementation action in the same turn. That action should be inspecting just enough context to brief subagents, creating/updating the task plan, and spawning bounded workers. Do not stop at "the next slice should be..."
 
-When assigned a scoped Linear issue or worker brief, take the slice as far as reasonably possible without waiting for another coordinator prompt. If the plan becomes clear and the brief allows edits, continue through implementation, focused review, fixes, verification, commit/push when permitted, and Linear closeout. Stop only for a real blocker: unsafe data loss, missing access, explicit no-edit/scout-only scope, unrelated dirty state that affects the slice, resource gates, failing verification that cannot be resolved in scope, or a required product decision.
+When assigned a scoped issue or worker brief, take the slice as far as reasonably possible without waiting for another coordinator prompt. If the plan becomes clear and the brief allows edits, continue through implementation, focused review, fixes, verification, commit/push when permitted, and tracker or handoff closeout. Stop only for a real blocker: unsafe data loss, missing access, explicit no-edit/scout-only scope, unrelated dirty state that affects the slice, resource gates, failing verification that cannot be resolved in scope, or a required product decision.
 
 When work spans turns, interruptions, or possible context compaction, leave a compact checkpoint in chat:
 
@@ -37,7 +37,7 @@ Use existing domain skills when they apply. This skill coordinates the work; it 
 - Direct main-thread edits are last-resort exceptions: subagents unavailable/exhausted, a tiny mechanical integration patch after worker output, or an urgent unblocker too small to delegate. State the exception before editing.
 - Treat subagents as exhausted only after tool failures, max-agent limits, repeated unusable outputs, or unavailable capability. State the specific reason before falling back.
 - If subagent tools are unavailable, state the fallback and run distinct named planning, implementation, and review passes in the main thread.
-- When this skill runs inside a delegated worker thread, treat the delegation brief as the source of truth for that slice. You may use bounded internal subagents when useful, but do not spawn extra Codex threads unless explicitly asked; finish the assigned slice or report the exact blocker.
+- When this skill runs inside a delegated worker thread, treat the delegation brief as the source of truth for that slice. The implementation owner owns its focused reviewer loop: keep it as the sole writer, spawn bounded fresh-context reviewer subagents when required, triage their findings, repair accepted issues, and request targeted re-review. Reviewer subagents stay read-only and do not spawn children. Do not create extra user-owned threads unless explicitly asked; finish the assigned slice or report the exact blocker.
 - Default delegated subagents to low reasoning. Raise to medium/high/xhigh only for architecture, security, data loss, billing, auth, migration, production, or ambiguous cross-system decisions.
 - Prefer the inherited model for subagents. Override model only when the task clearly benefits from a cheaper/faster or stronger/specialized model.
 - Do not leave subagents, dev servers, watchers, or other processes running after they stop being useful.
@@ -46,14 +46,14 @@ Use existing domain skills when they apply. This skill coordinates the work; it 
 
 ## Delegated Worker Intake
 
-When starting from a Linear issue, worker brief, or delegated Codex thread, normalize the assignment before editing. In the first useful checkpoint, state:
+When starting from an issue tracker, worker brief, or delegated Codex thread, normalize the assignment before editing. In the first useful checkpoint, state:
 
 - issue or objective id
 - repo/path/worktree and current branch
 - whether the thread is active, a continuation, duplicate, superseded, or blocked before edits
 - delivery target: scout-only, local-ready, committed, pushed, deployed, or live verified
 - commit, push, merge, deploy, and provider-mutation policy
-- the source of truth that must prove success: tests, build, live page, provider UI/API, logs, Linear, or a specific artifact
+- the source of truth that must prove success: tests, build, live page, provider UI/API, logs, issue tracker, or a specific artifact
 
 If thread-title tools are available, rename worker threads early to a short issue/objective label. Do not leave the thread title as a pasted delegation block when it can be corrected.
 
@@ -68,13 +68,13 @@ For provider, browser, deploy, ads, analytics, or external-account work, never i
 - If the objective requires committed or pushed work, do not stop at local-ready. After accepted blocker/high/medium findings are resolved and verification passes, commit only the scoped files.
 - If commit/push is allowed by the brief, treat it as part of closeout after clean review and verification; do not wait for a separate "commit it" prompt.
 - Before committing, prove branch, HEAD, dirty state, staged file names, and staged name-status. Abort if unrelated files are staged or required files are unexpectedly dirty.
-- Use a concise commit message tied to the issue. Push only the named branch or target in the brief, then record commit hash, push range, verification, and final status in Linear.
+- Use a concise commit message tied to the issue. Push only the named branch or target in the brief, then record commit hash, push range, verification, and final status in the issue tracker or handoff.
 - If an implementation worker, sidecar, or earlier turn already created commits or advanced a remote, verify actual local and remote refs before adding follow-up commits. Closeout must describe the real delivery state, including any unexpected target-branch movement; do not pretend a change stayed branch-only when remote proof shows otherwise.
 - Keep deploy separate from commit/push. Use the repo's current deploy owner and record whether deployment and live verification are done, pending, or blocked.
 - When a pushed branch is the expected delivery, include a merge-readiness judgment in closeout: target branch, source head, whether the branch is clean and pushed, conflict-check status if run, verification evidence, migration/deploy blockers, and whether the coordinator should merge automatically.
 - Do not leave work at "pushed" without naming the next integration action. If the branch appears merge-ready, say so plainly. If not, name the exact blocker.
-- Do not mark Linear `Done` merely because a local commit exists. If the branch is not pushed/deployed/live verified and the issue is not explicitly local-only, leave or move the issue to `In Review` and state the exact next integration step.
-- If a worker updates Linear itself, its state must match delivery reality: `local-ready`, `committed`, `pushed`, `deployed`, and `live verified` are different closeout states.
+- Do not mark tracked work `Done` merely because a local commit exists. If the branch is not pushed/deployed/live verified and the issue is not explicitly local-only, leave or move it to the equivalent of `In Review` and state the exact next integration step.
+- If a worker updates an issue tracker itself, its state must match delivery reality: `local-ready`, `committed`, `pushed`, `deployed`, and `live verified` are different closeout states.
 - When work is merged and pushed, do not assume the worker branch or worktree disappeared. Treat follow-on branch/worktree cleanup as part of integration closeout. Remove only worktrees proven safe by the resource-hygiene rules below, or report the exact cleanup blocker.
 
 ## Subagent Tool Hygiene
@@ -212,7 +212,7 @@ Run the Subagent Tool Hygiene checklist before each delegation wave, especially 
 
 Use workers for disjoint implementation slices, research threads, fixture/test additions, docs/artifact drafting, docs parity, focused verification, and fix implementation. Assign each worker explicit ownership of files, modules, or responsibilities. Tell workers they are not alone in the codebase and must not revert unrelated edits.
 
-For code changes, spawn implementation workers before the main thread writes code. For review, spawn reviewer workers before the main thread evaluates findings. For research, spawn explorer/research workers before the main thread draws conclusions. The main thread may inspect files for routing and briefing only, but should not continue into solo execution unless one of the direct-edit exceptions applies.
+For code changes, spawn implementation workers before the main thread writes code. Each implementation owner runs the reviewer loop for its artifact; the coordinator adds an integration-wide reviewer only when cross-slice risk requires one. For research, spawn explorer/research workers before the main thread draws conclusions. The main thread may inspect files for routing and briefing only, but should not continue into solo execution unless one of the direct-edit exceptions applies.
 
 Every subagent brief should include:
 
@@ -229,7 +229,9 @@ Every subagent brief should include:
 - evidence required
 - instruction not to edit or integrate unless explicitly assigned
 
-Use at least one worker for even single-slice work when subagents are available. Scale concurrency as the work can absorb it, up to the available maximum. Six is a ceiling, not a target. Prefer fewer agents only when the work cannot be split safely or coordination cost would exceed parallelism.
+Give reviewers a focused, fresh-context brief: the objective and acceptance criteria, exact artifact paths or diff/ref, one review lens, relevant constraints, and allowed verification commands. Do not pass the implementation owner's reasoning history or intended answer. Use no inherited conversation when supported; otherwise inherit only the minimum turns needed to access the artifact.
+
+Use at least one worker for even single-slice work when subagents are available. Scale concurrency only as the work can absorb it. Prefer one implementation owner for a cohesive artifact and add workers only for genuinely disjoint lanes whose parallel value exceeds coordination cost.
 
 When a worker finishes, evaluate its changed files or output before integrating. Inspect each worker boundary before stacking another worker's edits on top. Delegate follow-up fixes or verification when possible. The main thread owns the final accepted result.
 
@@ -243,14 +245,14 @@ If the implementation reveals that the plan is wrong, pause the slice long enoug
 
 ### 5. Review
 
-Use the `adversarial-review-loop` skill for any non-trivial implementation, production-facing artifact, plan-to-code execution, review/repair phase, or when the user asks for peer review, subagents, voting rounds, or re-review. Review work should be done by subagent reviewers when available; the main thread evaluates the validity of their findings.
+Use an adversarial review loop for any non-trivial implementation, production-facing artifact, plan-to-code execution, review/repair phase, or when the user asks for peer review, subagents, voting rounds, or re-review. If a compatible review skill is installed, use it without making Easy Execute depend on a private or separately installed skill. Review work should be done by fresh-context subagent reviewers when available. The implementation owner evaluates findings against the objective and evidence, remains the sole writer, and reports its triage and proof to the coordinator.
 
 Choose reviewer count by risk:
 
-- Tiny low-risk edit: one focused reviewer when subagents are available; main-thread review only under fallback or last-resort exceptions.
-- Normal feature or artifact: two reviewers.
-- Cross-cutting, public-facing, data-backed, or release-sensitive work: three reviewers.
-- Security, auth, billing, destructive migration, production incident, or major architecture: four to six reviewers with role diversity.
+- Static or no-behavior edit: self-check; add one reviewer only when a readiness claim or local policy requires independence.
+- Contained meaningful change: one focused reviewer.
+- Cross-cutting, public-facing, data-backed, or release-sensitive work: two or three reviewers with distinct lenses.
+- Security, auth, billing, destructive migration, production incident, or major architecture: add reviewers only for distinct high-risk domains; four or more is exceptional and should be justified explicitly.
 
 Useful reviewer roles include correctness, architecture/foundation, security/privacy, production/ops, product/UX, docs/contracts, strategy/commercial, and copy/content.
 
@@ -264,7 +266,7 @@ Classify findings as accepted, rejected, or deferred.
 - Rejected: incorrect, already covered, out of scope, or based on a false assumption. Record the rationale.
 - Deferred: valid but outside the current scope. Note the follow-up only when it matters.
 
-Delegate fixes for accepted blocker, high, and medium findings when subagents are available. Re-review changed areas with subagent reviewers until no accepted blocker/high/medium findings remain. Do not stop merely because tests pass.
+The implementation owner fixes accepted blocker, high, and medium findings, then requests targeted re-review of changed areas and affected contracts until no accepted blocker/high/medium findings remain. Do not hand write access to reviewers, re-review unchanged surfaces, or stop merely because tests pass.
 
 If subagents are unavailable or exhausted, perform a main-thread re-review with the same finding taxonomy and disclose the downgrade.
 
@@ -283,10 +285,10 @@ For deploy, tracking, analytics, ads, provider, and customer-visible site work, 
 
 Before final response, check active subagents, dev servers/watchers, temp artifacts, verification commands, and unresolved risks. Close unneeded subagents and stop unneeded local processes. Report what changed, what verified it, accepted findings fixed, rejected findings with rationale, deferred findings with next step, remaining blocker/high/medium count, unresolved risks, and the next concrete step if one remains.
 
-For Linear closeout, include:
+For issue-tracker or delegated-work closeout, include:
 
 - delivery state: local-ready | committed | pushed | deployed | live verified
 - branch and commit hash when applicable
 - push state and remote ref proof when applicable
-- whether Linear should be `In Review`, `Done`, or blocked, with the reason
+- whether the tracked work should be `In Review`, `Done`, or blocked, with the reason
 - downstream contract consumers or deploy owners still needing action
