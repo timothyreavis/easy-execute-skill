@@ -117,42 +117,19 @@ Reasoning selection:
 - High: architecture, security, data integrity, auth, billing, production behavior, ambiguous cross-system work.
 - Xhigh: irreversible decisions, destructive migrations, incident-critical judgment, or major cross-system architecture.
 
-## Foundation Standard
+## Durable Reuse Standard
 
-Before implementation, have planner/research subagents identify the foundation the requested work needs to remain useful over years, not just for the immediate feature. The main thread evaluates and accepts the foundation decisions.
+Prevent near-term rebuilds by separating behavior that must remain stable from behavior expected to vary. A reusable family requires multiple current implementations that share the specific semantics being extracted, or one current consumer plus an accepted, owned near-term consumer with a concrete contract and acceptance boundary that shares those same semantics. Names, ideas, roadmap mentions, and similar vocabulary alone do not qualify.
 
-Think through likely future variants, adjacent workflows, ownership boundaries, data contracts, extension points, migrations, observability, permissions, and failure modes. Build the requested feature on stable seams that can support those future additions.
+- Reuse or narrowly extend an existing owned seam before adding another path.
+- When an evidenced feature family shares lifecycle, state, failure, persistence, or UI semantics, keep those semantics in one stable kernel.
+- Keep shared tenant isolation and binding authorization in the kernel. Put tenant-specific configuration/projection, provider authentication and target-account authorization, payload, format, policy, and specialized display differences behind small typed adapters or handlers.
+- Build the current vertical slice and only the shared contract it requires. Do not add unused hooks, factories, configuration engines, plugin systems, universal schemas, or hypothetical branches.
+- Similar-looking behavior with different ownership, security, persistence, failure, or UX semantics stays separate.
+- If evidence is incomplete, preserve a cheap function or interface boundary and defer extraction.
+- When only one predicate, receipt, component, or sub-contract is shared, extract only that primitive; do not infer a generic workflow engine, state machine, or persistence layer.
 
-Do not implement speculative features. Do not add heavy abstractions, generic frameworks, or unused layers only because future work is possible. The target is a durable foundation for plausible expansion, with the current scope implemented simply and explicitly.
-
-Default to simple now, scale-safe later. Keep MVP behavior narrow, but choose data shapes, permissions, contracts, ownership boundaries, and migration paths that can support the obvious next versions without forcing a known rewrite. If the simple implementation would create likely refactor debt, call that out before building.
-
-Prefer reusable building blocks where adjacent or future features logically need the same behavior. Before adding a new UI pattern, data contract, API helper, permission check, workflow primitive, or integration adapter, look for an existing one to reuse or extend. Standardize repeated patterns at the lowest sensible layer, but avoid broad generic abstractions for one-off behavior.
-
-For frontend/UI work, prefer existing design-system primitives and tokenized styling over standalone elements. Use established tokens, CSS variables, theme values, or utility primitives for color, spacing, typography, radius, borders, shadows, states, and motion when the repo provides them. If a new primitive is justified, make it token-ready and reusable for adjacent cases; avoid hard-coded one-off visual variants unless the existing system cannot reasonably express the requirement. If no token system exists, match local conventions and note the follow-up instead of inventing a broad design system inside a small task.
-
-Use a minimum-complexity check before adding code or dependencies:
-
-1. Can this requirement be removed, deferred, or handled by existing behavior?
-2. Does the standard library, platform, database, browser, framework, or already-installed dependency cover it?
-3. Can an existing local component, helper, schema, event, permission primitive, or workflow primitive be reused or narrowly extended?
-4. Can the current scope be solved with a smaller explicit implementation?
-5. Only then add new code, files, abstractions, dependencies, or configuration.
-
-If a deliberately simple implementation has a known ceiling, document the ceiling and the trigger to upgrade it. Prefer a short code comment only when that ceiling would not be obvious from the code itself; otherwise name it in the plan, review, or closeout. Do not let "later" become untracked debt.
-
-Use this foundation decision path:
-
-- Existing foundation fits: build on it and preserve its contracts.
-- Existing foundation is close but incomplete: extend it narrowly at the right seam.
-- No foundation exists and future variants are plausible: create the smallest durable foundation needed for the current feature and likely next variants.
-- The change is isolated, tiny, or unlikely to repeat: do not create new foundation; make the direct change.
-- Cross-repo contract change: name the producer and consumer before editing. If a producer starts emitting/storing new fields, verify the consumer accepts them or create/comment the consumer follow-up before closing the producer issue.
-- Customer-visible shell/navigation change with unclear layout: do a design/scout pass before production implementation. The scout should settle placement, mobile behavior, priority relative to existing chrome, empty/action states, and implementation boundaries.
-
-For tiny or low-risk changes, delegate a light foundation check or keep it to one or two coordinator-reviewed sentences. For substantial work, have subagents first name three to ten realistic adjacent features or future variants that could reuse the same foundation. Then have them draft three to six foundation decisions before editing. Each decision should say what is being made stable now, what immediate feature it supports, and what future expansion it keeps possible. Add new abstractions only when current duplication, contract instability, or known near-term variants justify them.
-
-The adjacent-feature scan is a design calibration tool, not a scope expansion step. Workers must not implement those adjacent features unless the issue explicitly asks for them. If the scan does not reveal realistic reuse, keep the implementation direct.
+The goal is one reliable path for genuinely shared behavior with small replaceable edges. It is not code that can handle every imagined future.
 
 ## Worker Quality Bar
 
